@@ -1,0 +1,14 @@
+black
+flake8
+pylint
+bandit
+pytest
+pandas
+numpy
+scikit-learn
+category-encoders
+joblib
+fastapi
+uvicorn
+mlflow 
+psutil

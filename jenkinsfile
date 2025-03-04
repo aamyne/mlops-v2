@@ -1,0 +1,118 @@
+pipeline {
+    agent any
+    
+    environment {
+        PYTHON_VERSION = 'Python 3.8'  // Adjust to your Python version
+        VENV_PATH = 'venv'
+    }
+    
+    stages {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    // Ensure Python and pip are available
+                    sh '''
+                        python3 -m venv ${VENV_PATH}
+                        . ${VENV_PATH}/bin/activate
+                        pip install --upgrade pip
+                    '''
+                }
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+        
+        stage('Code Verification') {
+            parallel {
+                stage('Code Formatting') {
+                    steps {
+                        sh '''
+                            . ${VENV_PATH}/bin/activate
+                            black model_pipeline.py main.py
+                        '''
+                    }
+                }
+                
+                stage('Linting') {
+                    steps {
+                        sh '''
+                            . ${VENV_PATH}/bin/activate
+                            pylint --fail-under=5.0 model_pipeline.py main.py
+                        '''
+                    }
+                }
+                
+                stage('Security Check') {
+                    steps {
+                        sh '''
+                            . ${VENV_PATH}/bin/activate
+                            bandit -r model_pipeline.py main.py
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Prepare Data') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    python -c "from model_pipeline import prepare_data; prepare_data()"
+                '''
+            }
+        }
+        
+        stage('Train Model') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    python -c "from model_pipeline import prepare_data, train_model; X_train, y_train, _, _, _, _ = prepare_data(); model = train_model(X_train, y_train)"
+                '''
+            }
+        }
+        
+        stage('Start MLflow UI') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    mlflow ui --host localhost --port 5000 &
+                '''
+            }
+        }
+        
+        stage('Run Full Pipeline') {
+            steps {
+                sh '''
+                    . ${VENV_PATH}/bin/activate
+                    python main.py
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            sh '''
+                # Cleanup
+                rm -rf _pycache_
+                rm -rf ${VENV_PATH}
+                rm -f *.pkl
+            '''
+        }
+        
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        
+        failure {
+            echo 'Pipeline failed. Please check the logs.'
+        }
+    }
+}
