@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/680295349724806251/14fc96b0fe794a38b55b7712644f6a07/artifacts
+end_time: 1741132417710
+entry_point_name: ''
+experiment_id: '680295349724806251'
+lifecycle_stage: active
+run_id: 14fc96b0fe794a38b55b7712644f6a07
+run_name: BaggingClassifier Baseline
+run_uuid: 14fc96b0fe794a38b55b7712644f6a07
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1741132396622
+status: 3
+tags: []
+user_id: jenkins

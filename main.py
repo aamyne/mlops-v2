@@ -75,7 +75,7 @@ def main():
         mlflow.log_artifact("churn_model.pkl")
 
         print("\n=== Loading saved model ===")
-        loaded_model, loaded_encoder, loaded_scaler = load_model("churn_model.pkl")
+        loaded_model, loaded_encoder, loaded_scaler = load_model("churn_model.joblib")
 
         print("\n=== Sample prediction ===")
         sample_idx = 0

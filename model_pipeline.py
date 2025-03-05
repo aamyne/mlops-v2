@@ -53,7 +53,7 @@ def evaluate_model(model, X_test, y_test):
     return acc, report
 
 
-def save_model(model, encoder, scaler, filename="bagging_model.pkl"):
+def save_model(model, encoder, scaler, filename="bagging_model.joblib"):
     """Save the model and preprocessing objects."""
     joblib.dump({"model": model, "encoder": encoder, "scaler": scaler}, filename)
     print("Model saved as", filename)
