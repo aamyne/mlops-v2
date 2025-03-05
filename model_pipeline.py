@@ -1,8 +1,10 @@
 # model_pipeline.py
 from sklearn.ensemble import BaggingClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import StandardScaler
-from category_encoders import OrdinalEncoder  # Changed from OneHotEncoder to OrdinalEncoder
+from sklearn.preprocessing import MinMaxScaler
+from category_encoders import (
+    OrdinalEncoder
+)  # Changed from OneHotEncoder to OrdinalEncoder
 import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -24,9 +26,21 @@ def prepare_data():
     X_train, y_train = df_80.drop(columns=["Churn"]), df_80["Churn"]
     X_test, y_test = df_20.drop(columns=["Churn"]), df_20["Churn"]
 
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
+
+    # Drop redundant features (if they exist)
+    redundant_features = [
+        "Total day charge",
+        "Total eve charge",
+        "Total night charge",
+        "Total intl charge",
+    ]
+    X_train_scaled.drop(columns=redundant_features, inplace=True, errors="ignore")
+    X_test_scaled.drop(columns=redundant_features, inplace=True, errors="ignore")
+    y_train.drop(columns=redundant_features, inplace=True, errors="ignore")
+    y_test.drop(columns=redundant_features, inplace=True, errors="ignore")
 
     return X_train_scaled, y_train, X_test_scaled, y_test, encoder, scaler
 
