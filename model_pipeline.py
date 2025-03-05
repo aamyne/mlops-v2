@@ -2,11 +2,10 @@
 from sklearn.ensemble import BaggingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import MinMaxScaler
-from category_encoders import (
-    OrdinalEncoder
-)  # Changed from OneHotEncoder to OrdinalEncoder
+from category_encoders import OrdinalEncoder
 import pandas as pd
 import joblib
+import numpy as np
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 
@@ -15,21 +14,6 @@ def prepare_data():
     df_80 = pd.read_csv("churn-bigml-80.csv")
     df_20 = pd.read_csv("churn-bigml-20.csv")
 
-    categorical_features = ["State", "International plan", "Voice mail plan"]
-    encoder = OrdinalEncoder(cols=categorical_features)  # Changed to OrdinalEncoder
-    df_80_encoded = encoder.fit_transform(df_80[categorical_features])
-    df_20_encoded = encoder.transform(df_20[categorical_features])
-
-    df_80 = df_80.drop(columns=categorical_features).join(df_80_encoded)
-    df_20 = df_20.drop(columns=categorical_features).join(df_20_encoded)
-
-    X_train, y_train = df_80.drop(columns=["Churn"]), df_80["Churn"]
-    X_test, y_test = df_20.drop(columns=["Churn"]), df_20["Churn"]
-
-    scaler = MinMaxScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
     # Drop redundant features (if they exist)
     redundant_features = [
         "Total day charge",
@@ -37,10 +21,26 @@ def prepare_data():
         "Total night charge",
         "Total intl charge",
     ]
-    X_train_scaled.drop(columns=redundant_features, inplace=True, errors="ignore")
-    X_test_scaled.drop(columns=redundant_features, inplace=True, errors="ignore")
-    y_train.drop(columns=redundant_features, inplace=True, errors="ignore")
-    y_test.drop(columns=redundant_features, inplace=True, errors="ignore")
+    df_80 = df_80.drop(columns=redundant_features, errors="ignore")
+    df_20 = df_20.drop(columns=redundant_features, errors="ignore")
+
+    categorical_features = ["State", "International plan", "Voice mail plan"]
+    encoder = OrdinalEncoder(cols=categorical_features)
+    df_80_encoded = encoder.fit_transform(df_80)
+    df_20_encoded = encoder.transform(df_20)
+
+    X_train, y_train = df_80_encoded.drop(columns=["Churn"]), df_80_encoded["Churn"]
+    X_test, y_test = df_20_encoded.drop(columns=["Churn"]), df_20_encoded["Churn"]
+
+    scaler = MinMaxScaler()
+    X_train_scaled = pd.DataFrame(
+        scaler.fit_transform(X_train), columns=X_train.columns
+    )
+    X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
+
+    # Display the DataFrame
+    print("\nX_train_scaled DataFrame:")
+    print(X_train_scaled.head())  # Show first 5 rows for verification
 
     return X_train_scaled, y_train, X_test_scaled, y_test, encoder, scaler
 
@@ -67,13 +67,13 @@ def evaluate_model(model, X_test, y_test):
     return acc, report
 
 
-def save_model(model, encoder, scaler, filename="bagging_model.joblib"):
+def save_model(model, encoder, scaler, filename="churn_model.joblib"):
     """Save the model and preprocessing objects."""
     joblib.dump({"model": model, "encoder": encoder, "scaler": scaler}, filename)
     print("Model saved as", filename)
 
 
-def load_model(filename="bagging_model.joblib"):
+def load_model(filename="churn_model.joblib"):
     """Load the saved model and preprocessing objects."""
     data = joblib.load(filename)
     return data["model"], data["encoder"], data["scaler"]

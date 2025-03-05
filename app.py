@@ -55,9 +55,6 @@ async def predict(data: InputData):
         # Create a DataFrame with the input data
         input_df = pd.DataFrame([input_dict])
         
-        # Apply categorical encoding using the loaded encoder
-        categorical_features = ["State", "International plan", "Voice mail plan"]
-        
         # Rename columns to match training data
         input_df = input_df.rename(columns={
             "state": "State",
@@ -65,11 +62,22 @@ async def predict(data: InputData):
             "voice_mail_plan": "Voice mail plan"
         })
         
-        # Apply encoder
-        input_encoded = encoder.transform(input_df[categorical_features])
+        # Apply categorical encoding using the loaded encoder
+        categorical_features = ["State", "International plan", "Voice mail plan"]
+        encoded_array = encoder.transform(input_df[categorical_features])
+        encoded_df = pd.DataFrame(encoded_array, columns=categorical_features)
+        
+        # Ensure encoded_df has the same number of categorical columns as expected
+        if encoded_df.shape[1] != len(categorical_features):
+            raise ValueError(f"Encoding error: Expected {len(categorical_features)} encoded columns, got {encoded_df.shape[1]}")
         
         # Drop original categorical columns and join encoded ones
-        input_processed = input_df.drop(columns=categorical_features).join(input_encoded)
+        input_processed = input_df.drop(columns=categorical_features).reset_index(drop=True)
+        input_processed = pd.concat([input_processed, encoded_df], axis=1)
+        
+        # Ensure the input shape matches expected model input
+        if input_processed.shape[1] != 15:
+            raise ValueError(f"Unexpected input dimension {input_processed.shape[1]}, expected 15")
         
         # Convert to numeric array for scaling
         input_array = input_processed.to_numpy()
@@ -90,53 +98,6 @@ async def predict(data: InputData):
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
-
-# Excellence: Add retrain endpoint
-class RetrainRequest(BaseModel):
-    n_estimators: int = 50
-    random_state: int = 42
-
-@app.post("/retrain", summary="Retrain the model with new parameters")
-async def retrain(request: RetrainRequest):
-    try:
-        from model_pipeline import prepare_data, train_model, evaluate_model, save_model
-        
-        # Prepare data
-        X_train, y_train, X_test, y_test, new_encoder, new_scaler = prepare_data()
-        
-        # Train model with new parameters
-        new_model = train_model(X_train, y_train, 
-                           n_estimators=request.n_estimators, 
-                           random_state=request.random_state)
-        
-        # Evaluate model
-        accuracy, report = evaluate_model(new_model, X_test, y_test)
-        
-        # Save model
-        save_model(new_model, new_encoder, new_scaler, MODEL_PATH)
-        
-        # Update global model
-        global model, encoder, scaler
-        model = new_model
-        encoder = new_encoder
-        scaler = new_scaler
-        
-        return {
-            "message": "Model retrained successfully",
-            "parameters": {
-                "n_estimators": request.n_estimators,
-                "random_state": request.random_state
-            },
-            "performance": {
-                "accuracy": accuracy,
-                "precision": report["weighted avg"]["precision"],
-                "recall": report["weighted avg"]["recall"],
-                "f1_score": report["weighted avg"]["f1-score"]
-            }
-        }
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Retraining error: {str(e)}")
 
 # Health check endpoint
 @app.get("/", summary="Health check")

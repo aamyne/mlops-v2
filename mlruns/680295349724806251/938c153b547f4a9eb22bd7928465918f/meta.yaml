@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/680295349724806251/938c153b547f4a9eb22bd7928465918f/artifacts
+end_time: 1741209175083
+entry_point_name: ''
+experiment_id: '680295349724806251'
+lifecycle_stage: active
+run_id: 938c153b547f4a9eb22bd7928465918f
+run_name: BaggingClassifier Baseline
+run_uuid: 938c153b547f4a9eb22bd7928465918f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1741209156769
+status: 4
+tags: []
+user_id: amine
