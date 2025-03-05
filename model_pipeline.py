@@ -2,7 +2,7 @@
 from sklearn.ensemble import BaggingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
-from category_encoders import OneHotEncoder
+from category_encoders import OrdinalEncoder  # Changed from OneHotEncoder to OrdinalEncoder
 import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -14,7 +14,7 @@ def prepare_data():
     df_20 = pd.read_csv("churn-bigml-20.csv")
 
     categorical_features = ["State", "International plan", "Voice mail plan"]
-    encoder = OneHotEncoder(cols=categorical_features, use_cat_names=True)
+    encoder = OrdinalEncoder(cols=categorical_features)  # Changed to OrdinalEncoder
     df_80_encoded = encoder.fit_transform(df_80[categorical_features])
     df_20_encoded = encoder.transform(df_20[categorical_features])
 
@@ -59,7 +59,7 @@ def save_model(model, encoder, scaler, filename="bagging_model.joblib"):
     print("Model saved as", filename)
 
 
-def load_model(filename="bagging_model.pkl"):
+def load_model(filename="bagging_model.joblib"):
     """Load the saved model and preprocessing objects."""
     data = joblib.load(filename)
     return data["model"], data["encoder"], data["scaler"]
