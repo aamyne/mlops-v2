@@ -55,32 +55,24 @@ async def predict(data: InputData):
         # Create a DataFrame with the input data
         input_df = pd.DataFrame([input_dict])
         
-        # Rename columns to match training data
-        input_df = input_df.rename(columns={
-            "state": "State",
-            "international_plan": "International plan",
-            "voice_mail_plan": "Voice mail plan"
-        })
+        # Define categorical features
+        categorical_features = ["state", "international_plan", "voice_mail_plan"]
         
-        # Apply categorical encoding using the loaded encoder
-        categorical_features = ["State", "International plan", "Voice mail plan"]
-        encoded_array = encoder.transform(input_df[categorical_features])
-        encoded_df = pd.DataFrame(encoded_array, columns=categorical_features)
+        # Apply categorical encoding using the loaded encoder (OrdinalEncoder returns single-column values)
+        encoded_values = encoder.transform(input_df[categorical_features])
         
-        # Ensure encoded_df has the same number of categorical columns as expected
-        if encoded_df.shape[1] != len(categorical_features):
-            raise ValueError(f"Encoding error: Expected {len(categorical_features)} encoded columns, got {encoded_df.shape[1]}")
+        # Ensure encoded_values is a DataFrame
+        encoded_df = pd.DataFrame(encoded_values, columns=categorical_features)
         
-        # Drop original categorical columns and join encoded ones
-        input_processed = input_df.drop(columns=categorical_features).reset_index(drop=True)
-        input_processed = pd.concat([input_processed, encoded_df], axis=1)
+        # Replace categorical columns in the input DataFrame with encoded values
+        input_df[categorical_features] = encoded_df
         
-        # Ensure the input shape matches expected model input
-        if input_processed.shape[1] != 15:
-            raise ValueError(f"Unexpected input dimension {input_processed.shape[1]}, expected 15")
+        # Ensure the input shape matches expected model input (15 features)
+        if input_df.shape[1] != 15:
+            raise ValueError(f"Unexpected input dimension {input_df.shape[1]}, expected 15")
         
         # Convert to numeric array for scaling
-        input_array = input_processed.to_numpy()
+        input_array = input_df.to_numpy()
         
         # Apply scaling
         input_scaled = scaler.transform(input_array)
