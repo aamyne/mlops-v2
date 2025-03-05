@@ -71,8 +71,8 @@ def main():
         mlflow.log_metrics(get_system_metrics())
 
         print("\n=== Saving model ===")
-        save_model(model, encoder, scaler, "churn_model.pkl")
-        mlflow.log_artifact("churn_model.pkl")
+        save_model(model, encoder, scaler, "churn_model.joblib")
+        mlflow.log_artifact("churn_model.joblib")
 
         print("\n=== Loading saved model ===")
         loaded_model, loaded_encoder, loaded_scaler = load_model("churn_model.joblib")
